@@ -18,7 +18,7 @@ class EscalationGrader:
     def __init__(
         self,
         client: Optional[OpenAIResponsesClient] = None,
-        model: str = "gpt-5-mini",
+        model: str = "gpt-4o-mini",
         max_turns: int = 16,
         max_step: float = 0.35,  # inertia guardrail: cap per-turn movement
     ):

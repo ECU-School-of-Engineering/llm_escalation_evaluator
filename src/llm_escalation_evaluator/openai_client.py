@@ -1,4 +1,3 @@
-# src/llm_escalation_evaluator/openai_client.py
 from __future__ import annotations
 import os, json
 from openai import OpenAI

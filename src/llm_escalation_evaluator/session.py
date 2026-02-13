@@ -37,12 +37,12 @@ class TrainingSession:
         self.buffer.add(Turn(role="nurse", text=text))
 
         logger.info(
-            "Graded nurse line | label=%s impact=%.3f new_state=%.3f conf=%.2f signals=%s",
+            "Graded nurse line | label=%s impact=%.3f new_state=%.3f conf=%.2f",
             result.turn_label,
             result.nurse_impact,
             result.patient_escalation_level,
             result.confidence,
-            ",".join(result.signals),
+            # ",".join(result.signals),
         )
         return result
 
