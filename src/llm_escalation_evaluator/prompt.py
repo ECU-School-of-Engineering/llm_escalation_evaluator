@@ -18,9 +18,9 @@ Output fields:
 - nurse_impact: continuous impact in [-1,+1] (negative calms, positive escalates)
 - patient_escalation_level: estimated patient state AFTER the nurse line in [-1,+1]
 - confidence: [0,1]
-- signals: short tags that justify (e.g., validation, threat, command, sarcasm, autonomy, plan)
-- rationale: 1–2 sentences
-- coaching: 0–2 rewritten nurse lines that would be more de-escalatory (keep clinically safe)
+# - signals: short tags that justify (e.g., validation, threat, command, sarcasm, autonomy, plan)
+# - rationale: 1–2 sentences
+# - coaching: 0–2 rewritten nurse lines that would be more de-escalatory (keep clinically safe)
 
 Important:
 - Judge from patient perception, not whether the nurse is clinically correct.

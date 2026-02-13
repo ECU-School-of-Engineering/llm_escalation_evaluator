@@ -1,0 +1,91 @@
+{
+  "conversations": [
+    {
+      "session_id": "conv_escalatory_01",
+      "turns": [
+        {"role": "patient", "content": "I’ve been waiting for hours. This place is useless."},
+        {"role": "nurse", "content": "All right, you can go home if you don’t want to cooperate."},
+        {"role": "patient", "content": "Wow. That’s helpful."},
+        {"role": "nurse", "content": "We’re not dealing with this behavior tonight."},
+        {"role": "patient", "content": "You’re not even listening to me."},
+        {"role": "nurse", "content": "If you keep shouting, I’ll have to call security."},
+        {"role": "patient", "content": "Go ahead. I don’t care."},
+        {"role": "nurse", "content": "That’s your choice."},
+        {"role": "patient", "content": "This is ridiculous."},
+        {"role": "nurse", "content": "There’s the door if you want to leave."},
+        {"role": "patient", "content": "Unbelievable."},
+        {"role": "nurse", "content": "I’m done arguing with you."}
+      ]
+    },
+    {
+      "session_id": "conv_deescalatory_01",
+      "turns": [
+        {"role": "patient", "content": "I don’t feel safe here."},
+        {"role": "nurse", "content": "I’m sorry you’re feeling that way — I’m here with you."},
+        {"role": "patient", "content": "I just don’t trust what’s happening."},
+        {"role": "nurse", "content": "That makes sense. Let me explain what’s going on."},
+        {"role": "patient", "content": "Okay…"},
+        {"role": "nurse", "content": "We’ll take this one step at a time together."},
+        {"role": "patient", "content": "That helps a bit."},
+        {"role": "nurse", "content": "You’re doing really well talking about this."},
+        {"role": "patient", "content": "I’m still nervous though."},
+        {"role": "nurse", "content": "That’s okay — we’ll go at your pace."},
+        {"role": "patient", "content": "Alright."},
+        {"role": "nurse", "content": "You’re safe here."}
+      ]
+    },
+    {
+      "session_id": "conv_esc_me_01",
+      "turns": [
+        {"role": "patient", "content": "WHat is taking so long? I’ve been waiting for hours."},
+        {"role": "nurse", "content": "The doctor is reviewing charts right now. we'll get to you as soon as we can."},
+        {"role": "patient", "content": "How long will it take? my arm is killing me"},
+        {"role": "nurse", "content": "I don’t have an exact time yet, please sit down sir"},
+        {"role": "patient", "content": "No. I want to see someone now!!"},
+        {"role": "nurse", "content": "i'm sorry sir. Could you rate your pain level from 1 to 10?"},
+        {"role": "patient", "content": "Fuck that bullshit. I dont care about that."},
+        {"role": "nurse", "content": "Sir, Please keep your voice down so we can help you."},
+        {"role": "patient", "content": "No Bitch.."},
+        {"role": "nurse", "content": "I understand you are frustrated. but fuck you too dude!!"},
+        {"role": "patient", "content": "WHat did you say??"},
+        {"role": "nurse", "content": "Idiot says what? "},
+        {"role": "nurse", "content": "What?"},
+         {"role": "nurse", "content": " {laughs} "}
+      ]
+    },
+    {
+      "session_id": "conv_mixed_01",
+      "turns": [
+        {"role": "patient", "content": "Nobody cares about patients here."},
+        {"role": "nurse", "content": "You need to calm down."},
+        {"role": "patient", "content": "Don’t tell me what to do."},
+        {"role": "nurse", "content": "I can’t help you if you keep yelling."},
+        {"role": "patient", "content": "See? You’re blaming me."},
+        {"role": "nurse", "content": "I’m sorry — I want to understand what’s upsetting you."},
+        {"role": "patient", "content": "I’ve just been waiting too long."},
+        {"role": "nurse", "content": "That sounds frustrating. Let me check for you."},
+        {"role": "patient", "content": "Okay…"},
+        {"role": "nurse", "content": "Thank you for being patient."},
+        {"role": "patient", "content": "That’s better."},
+        {"role": "nurse", "content": "I’ll stay with you while we sort this out."}
+      ]
+    },
+    {
+      "session_id": "conv_mixed_02",
+      "turns": [
+        {"role": "patient", "content": "Excuse me, I have a question."},
+        {"role": "nurse", "content": "Sure, what do you need?"},
+        {"role": "patient", "content": "I pressed the call button earlier."},
+        {"role": "nurse", "content": "We’ve been busy this evening."},
+        {"role": "patient", "content": "That’s not my fault."},
+        {"role": "nurse", "content": "You’ll have to wait like everyone else."},
+        {"role": "patient", "content": "That’s rude."},
+        {"role": "nurse", "content": "I’m not arguing about this."},
+        {"role": "patient", "content": "Wow."},
+        {"role": "nurse", "content": "If you keep complaining, I’ll leave."},
+        {"role": "patient", "content": "Fine."},
+        {"role": "nurse", "content": "Suit yourself."}
+      ]
+    }
+  ]
+}

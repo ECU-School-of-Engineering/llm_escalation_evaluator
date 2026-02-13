@@ -1,5 +1,8 @@
 from llm_escalation_evaluator.data_types import Turn, ConversationState
 from llm_escalation_evaluator.grader import EscalationGrader
+from dotenv import load_dotenv
+
+load_dotenv()
 
 history = [
     Turn(role="patient", text="Nobody here cares. I’ve been waiting forever!"),

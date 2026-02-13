@@ -4,7 +4,7 @@ import json
 from typing import List, Optional
 from .data_types import Turn, ConversationState, GradeResult
 from .prompt import SYSTEM_RUBRIC, format_history
-from .schema import SCHEMA
+from .schema import SCHEMA_BODY,SCHEMA_NAME
 from .openai_client import OpenAIResponsesClient
 
 def clamp(x: float, lo: float = -1.0, hi: float = 1.0) -> float:
@@ -43,11 +43,12 @@ class EscalationGrader:
         }
 
         raw = self.client.grade(
-            model=self.model,
-            system=SYSTEM_RUBRIC,
-            user_payload=payload,
-            schema=SCHEMA,
-        )
+                model=self.model,
+                system=SYSTEM_RUBRIC,
+                user_payload=payload,
+                schema_name=SCHEMA_NAME,
+                schema_body=SCHEMA_BODY,)
+        
 
         data = json.loads(raw)
 
@@ -67,9 +68,9 @@ class EscalationGrader:
             nurse_impact=clamp(nurse_impact),
             patient_escalation_level=stabilized,
             confidence=float(data["confidence"]),
-            signals=list(data["signals"]),
-            rationale=data["rationale"],
-            coaching=list(data["coaching"]),
+            # signals=list(data["signals"]),
+            # rationale=data["rationale"],
+            # coaching=list(data["coaching"]),
         )
 
     def apply(self, state: ConversationState, result: GradeResult) -> ConversationState:
@@ -77,6 +78,5 @@ class EscalationGrader:
         Update and return a new ConversationState.
         """
         return ConversationState(
-            escalation=result.patient_escalation_level,
-            metadata={**state.metadata, "last_signals": result.signals},
+            escalation=result.patient_escalation_level
         )

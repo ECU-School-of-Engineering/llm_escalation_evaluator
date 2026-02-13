@@ -23,6 +23,6 @@ class GradeResult:
     nurse_impact: float                 # in [-1, +1] (continuous)
     patient_escalation_level: float     # in [-1, +1] (continuous)
     confidence: float                   # in [0, 1]
-    signals: List[str]
-    rationale: str
-    coaching: List[str]                 # suggested better nurse lines
+    # signals: List[str]
+    # rationale: str
+    # coaching: List[str]                 # suggested better nurse lines
