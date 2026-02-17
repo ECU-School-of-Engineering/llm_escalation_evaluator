@@ -74,6 +74,8 @@ class EscalationGrader:
             nurse_impact=clamp(nurse_impact),
             patient_escalation_level=stabilized,
             confidence=float(data["confidence"]),
+            context_alignment=data["context_alignment"],
+            sarcasm_detected=data["sarcasm_detected"],
             # signals=list(data["signals"]),
             # rationale=data["rationale"],
             # coaching=list(data["coaching"]),

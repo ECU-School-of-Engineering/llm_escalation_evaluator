@@ -22,7 +22,9 @@ class GradeResult:
     turn_label: Literal["escalatory", "deescalatory", "neutral"]
     nurse_impact: float                 # in [-1, +1] (continuous)
     patient_escalation_level: float     # in [-1, +1] (continuous)
-    confidence: float                   # in [0, 1]
+    confidence: float
+    context_alignment: str
+    sarcasm_detected: str
     # signals: List[str]
     # rationale: str
     # coaching: List[str]                 # suggested better nurse lines

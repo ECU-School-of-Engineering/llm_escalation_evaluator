@@ -8,6 +8,8 @@ SCHEMA_BODY = {
         "nurse_impact": {"type": "number", "minimum": -1.0, "maximum": 1.0},
         "patient_escalation_level": {"type": "number", "minimum": -1.0, "maximum": 1.0},
         "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "context_alignment": {"type": "string","enum": ["yes", "partial", "no"]},
+        "sarcasm_detected": {"type": "string","enum": ["yes", "no"]}
         # "signals": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
         # "rationale": {"type": "string"},W123
         # "coaching": {"type": "array", "items": {"type": "string"}, "minItems": 0, "maxItems": 2},
@@ -17,6 +19,8 @@ SCHEMA_BODY = {
         "nurse_impact",
         "patient_escalation_level",
         "confidence",
+        "context_alignment",
+        "sarcasm_detected",
         # "signals",
         # "rationale",
         # "coaching",
