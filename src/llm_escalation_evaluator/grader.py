@@ -21,11 +21,15 @@ class EscalationGrader:
         model: str = "gpt-4o-mini",
         max_turns: int = 16,
         max_step: float = 0.35,  # inertia guardrail: cap per-turn movement
+        temperature: float = 0.0, #default to deterministic for grading, but can be increased for more exploratory analysis or coaching generation
+        seed: int | None = None,  
     ):
         self.client = client or OpenAIResponsesClient()
         self.model = model
         self.max_turns = max_turns
         self.max_step = max_step
+        self.temperature = temperature
+        self.seed = seed
 
     def evaluate_nurse_turn(
         self,
@@ -47,7 +51,9 @@ class EscalationGrader:
                 system=SYSTEM_RUBRIC,
                 user_payload=payload,
                 schema_name=SCHEMA_NAME,
-                schema_body=SCHEMA_BODY,)
+                schema_body=SCHEMA_BODY,
+                temperature=self.temperature,
+                seed=self.seed,)
         
 
         data = json.loads(raw)

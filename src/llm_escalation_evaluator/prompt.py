@@ -24,6 +24,9 @@ Output fields:
 
 Important:
 - Judge from patient perception, not whether the nurse is clinically correct.
+- Infer the intended meaning of the sentence before grading.
+- Do NOT treat spelling mistakes or transcription artifacts as emotional signals.
+- The conversation text may contain minor spelling mistakes, typos, or TTS/STT transcription errors.
 - Emotional inertia: large jumps (>0.4) should be rare unless there is a strong trigger (threat, humiliation, strong validation + clear plan).
 - If nurse must set a boundary or refuse a request, it can still be de-escalatory if respectful + explains next step + preserves dignity.
 """
