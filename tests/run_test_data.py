@@ -119,11 +119,26 @@ class TrajectoryPlotter:
 
         # X axis = nurse sentence order
         x = np.arange(len(s))
-        labels = [self._wrap_label(self._short_label(t)) for t in s["text"].astype(str).tolist()]
+        # labels = [self._wrap_label(self._short_label(t)) for t in s["text"].astype(str).tolist()]
+        labels = []
+        for text, gt in zip(s["text"], s["ground_truth_label"]):
+            base = self._short_label(text)
+            if pd.notna(gt):
+                base = f"{base}\n[GT: {gt}]"
+            labels.append(self._wrap_label(base))
 
         y_pred = pd.to_numeric(s["predicted_escalation"], errors="coerce")
         y_final = pd.to_numeric(s["final_escalation"], errors="coerce")
-        y_gt = pd.to_numeric(s.get("ground_truth_score", np.nan), errors="coerce")
+        if "ground_truth_label" in s.columns:
+            gt_map = {
+                "escalatory": 0.9,
+                "neutral": 0.0,
+                "deescalatory": -0.9,
+            }
+
+            gt_vals = s["ground_truth_label"].map(gt_map)
+            plt.scatter(x, gt_vals, marker="D", label="Ground truth label")
+        # y_gt = pd.to_numeric(s.get("ground_truth_score", np.nan), errors="coerce")
 
         sarcasm = s.get("sarcasm_detected", "no")
         sarcasm = sarcasm.astype(str).str.lower().str.strip()
@@ -138,8 +153,8 @@ class TrajectoryPlotter:
 
         plt.plot(x, y_pred, marker="o", label="Predicted escalation (raw)")
         plt.plot(x, y_final, marker="o", label="Final escalation (for FIS)")
-        if y_gt.notna().any():
-            plt.plot(x, y_gt, marker="o", label="Ground truth escalation")
+        # if y_gt.notna().any():
+        #     plt.plot(x, y_gt, marker="o", label="Ground truth escalation")
 
         # markers (on final line for visibility)
         if len(sarcasm_idx) > 0:
@@ -243,7 +258,8 @@ class EvaluationRunner:
                         "confidence": None,
                         "context_alignment": None,
                         "sarcasm_detected": None,
-                        "ground_truth_score": row.get("ground_truth_label", None),
+                        "ground_truth_edn": row.get("ground_truth_edn", None),
+                        "ground_truth_label": row.get("ground_truth_label", None),
                     })
 
                 elif role == self.cfg.nurse_role.lower():  # nurse
@@ -264,7 +280,8 @@ class EvaluationRunner:
                         "confidence": result.confidence,
                         "context_alignment": getattr(result, "context_alignment", None),
                         "sarcasm_detected": getattr(result, "sarcasm_detected", None),
-                        "ground_truth_score": row.get("ground_truth_label", None),
+                        "ground_truth_edn": row.get("ground_truth_edn", None),
+                        "ground_truth_label": row.get("ground_truth_label", None),
                     })
 
         out_df = pd.DataFrame(results)
@@ -291,7 +308,7 @@ class EvaluationRunner:
                 continue
 
             test_name = f"test {self.cfg.test_number} ({self.model_used})"
-            out_path = os.path.join(self.plots_dir, f"trajectory_{session_id}.png")
+            out_path = os.path.join(self.plots_dir, f"trajectory_{session_id}_{self.cfg.test_number}.png")
 
             self.plotter.plot_session(
                 df_session_nurse=s_nurse,
@@ -332,14 +349,19 @@ class EvalSuite:
 # -----------------------------
 if __name__ == "__main__":
     # Same sessions, multiple tests/models:
-    suite = EvalSuite(base_csv_path="tests/conversations_Feb_01_with_ground_truth.csv", out_dir="tests")
 
+    # df = pd.read_csv("tests/evaluation_results_test_10.csv")
+
+    # runner = EvaluationRunner(EvalRunConfig(test_number=10, csv_path=""))
+    # runner.make_plots(df)
+    suite = EvalSuite(base_csv_path="tests/conversations_Feb_01_with_ground_truth.csv", out_dir="tests")
+    
     runs = [
         EvalRunConfig(
-            test_number=8,
+            test_number=12,
             csv_path="tests/conversations_Feb_01_with_ground_truth.csv",
             out_dir="tests",
-            session_filter=["cb2053bb-72a6-4542-bdf6-07de82a0dcdb","d555e174-f9a4-4514-83de-ab68d48cbf5d","041a4ab4-0fbf-4623-b5b4-2948de4fdc8e"],
+            session_filter=["041a4ab4-0fbf-4623-b5b4-2948de4fdc8e"],
             model="gpt-5-mini",
             temperature=None,  # (ignored/unsupported for some models)
         ),

@@ -1,14 +1,15 @@
 # escalation_grader/grader.py
 from __future__ import annotations
 import json
-from typing import List, Optional
-from .data_types import Turn, ConversationState, GradeResult
+import logging
+from typing import List, Literal, Optional
+from .data_types import Turn
 from .prompt import SYSTEM_RUBRIC, format_history
-from .schema import SCHEMA_BODY,SCHEMA_NAME
+from .schema import SCHEMA_BODY, SCHEMA_NAME
 from .openai_client import OpenAIResponsesClient
 
-def clamp(x: float, lo: float = -1.0, hi: float = 1.0) -> float:
-    return max(lo, min(hi, x))
+logger = logging.getLogger(__name__)
+
 
 class EscalationGrader:
     """
@@ -20,71 +21,45 @@ class EscalationGrader:
         client: Optional[OpenAIResponsesClient] = None,
         model: str = "gpt-4o-mini",
         max_turns: int = 16,
-        max_step: float = 0.35,  # inertia guardrail: cap per-turn movement
-        temperature: float = 0.0, #default to deterministic for grading, but can be increased for more exploratory analysis or coaching generation
-        seed: int | None = None,  
+        temperature: float = 0.0,
+        seed: int | None = None,
+        debug: bool = False,
     ):
         self.client = client or OpenAIResponsesClient()
         self.model = model
         self.max_turns = max_turns
-        self.max_step = max_step
         self.temperature = temperature
         self.seed = seed
+        if debug:
+            logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
+            logger.setLevel(logging.DEBUG)
 
     def evaluate_nurse_turn(
         self,
         *,
         history: List[Turn],
         nurse_line: str,
-        state: ConversationState,
-        context: Optional[dict] = None,  # e.g., ward type, scenario, constraints
-    ) -> GradeResult:
+        context: Optional[dict] = None,
+    ) -> Literal["escalatory", "deescalatory", "neutral"]:
         payload = {
-            "previous_escalation_score": state.escalation,
             "conversation_history": format_history(history, max_turns=self.max_turns),
             "current_nurse_line": nurse_line,
             "context": context or {},
         }
 
+        logger.debug("=== LLM INPUT ===\n[SYSTEM]\n%s\n[USER]\n%s", SYSTEM_RUBRIC, json.dumps(payload, indent=2, ensure_ascii=False))
+
         raw = self.client.grade(
-                model=self.model,
-                system=SYSTEM_RUBRIC,
-                user_payload=payload,
-                schema_name=SCHEMA_NAME,
-                schema_body=SCHEMA_BODY,
-                temperature=self.temperature,
-                seed=self.seed,)
-        
+            model=self.model,
+            system=SYSTEM_RUBRIC,
+            user_payload=payload,
+            schema_name=SCHEMA_NAME,
+            schema_body=SCHEMA_BODY,
+            temperature=self.temperature,
+            seed=self.seed,
+        )
+
+        logger.debug("=== LLM OUTPUT ===\n%s", raw)
 
         data = json.loads(raw)
-
-        # Optional extra guardrail: cap movement between previous and new.
-        proposed = float(data["patient_escalation_level"])
-        prev = float(state.escalation)
-        delta = clamp(proposed - prev, -self.max_step, self.max_step)
-        stabilized = clamp(prev + delta)
-
-        # Keep nurse_impact consistent with stabilized result (optional)
-        nurse_impact = float(data["nurse_impact"])
-        # If you want nurse_impact to reflect the stabilized step:
-        # nurse_impact = clamp(delta / max(self.max_step, 1e-6), -1.0, 1.0)
-
-        return GradeResult(
-            turn_label=data["turn_label"],
-            nurse_impact=clamp(nurse_impact),
-            patient_escalation_level=stabilized,
-            confidence=float(data["confidence"]),
-            context_alignment=data["context_alignment"],
-            sarcasm_detected=data["sarcasm_detected"],
-            # signals=list(data["signals"]),
-            # rationale=data["rationale"],
-            # coaching=list(data["coaching"]),
-        )
-
-    def apply(self, state: ConversationState, result: GradeResult) -> ConversationState:
-        """
-        Update and return a new ConversationState.
-        """
-        return ConversationState(
-            escalation=result.patient_escalation_level
-        )
+        return data["turn_label"]

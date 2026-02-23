@@ -29,3 +29,11 @@ Thumbs.db
 
 # logs
 *.log
+
+tests/
+
+# evaluation outputs
+*.csv
+*.xlsx
+**/trajectory_plots/
+**/combined_trajectory_plots/
