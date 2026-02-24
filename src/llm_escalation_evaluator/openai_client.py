@@ -22,6 +22,7 @@ class OpenAIResponsesClient:
         schema_body: dict,
         temperature: float | None = None,
         seed: int | None = None,
+        use_schema: bool = True,
     ) -> str:
 
         req = {
@@ -30,15 +31,17 @@ class OpenAIResponsesClient:
                 {"role": "system", "content": system},
                 {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
             ],
-            "text": {
+        }
+
+        if use_schema:
+            req["text"] = {
                 "format": {
                     "type": "json_schema",
                     "name": schema_name,
                     "schema": schema_body,
                     "strict": True,
                 }
-            },
-        }
+            }
 
         if temperature is not None:
             req["temperature"] = temperature
