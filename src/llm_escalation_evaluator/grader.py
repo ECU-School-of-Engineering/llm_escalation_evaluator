@@ -1,11 +1,10 @@
 from __future__ import annotations
 import json
 import logging
-from typing import List, Literal, Optional
-from .data_types import Turn
+from typing import Literal, Optional
 from .prompt import format_history
 from .openai_client import OpenAIResponsesClient
-from .yaml_config import load_config, build_schema_body
+from .yaml_config import load_profile_config, build_schema_body
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +12,13 @@ logger = logging.getLogger(__name__)
 class EscalationGrader:
     """
     Grades nurse lines for impact on patient escalation.
-    Settings are loaded from a YAML config file (default: grader_config.yaml
-    packaged with the library). Any kwarg passed explicitly overrides the YAML.
+    Settings are loaded from the profile block in grader_config.yaml.
+    Any kwarg passed explicitly overrides the YAML value.
     """
 
     def __init__(
         self,
+        profile: str,
         config_path: str | None = None,
         client: Optional[OpenAIResponsesClient] = None,
         model: str | None = None,
@@ -27,18 +27,24 @@ class EscalationGrader:
         seed: int | None = None,
         use_schema: bool | None = None,
         conversation_context_aware: bool | None = None,
-        scene_aware: bool | None = None,
         debug: bool = False,
     ):
-        cfg = load_config(config_path)
+        cfg = load_profile_config(profile=profile, path=config_path)
 
+        self.profile     = profile
         self.model       = model       if model       is not None else cfg["model"]
         self.max_turns   = max_turns   if max_turns   is not None else cfg["max_turns"]
         self.temperature = temperature if temperature is not None else cfg["temperature"]
         self.seed        = seed        if seed        is not None else cfg.get("seed")
         self.use_schema  = use_schema  if use_schema  is not None else cfg["use_schema"]
-        self.conversation_context_aware = conversation_context_aware if conversation_context_aware is not None else cfg.get("conversation_context_aware", True)
-        self.scene_aware                = scene_aware                if scene_aware                is not None else cfg.get("scene_aware", True)
+        self.conversation_context_aware = (
+            conversation_context_aware
+            if conversation_context_aware is not None
+            else cfg.get("conversation_context_aware", True)
+        )
+
+        self._user_name      = cfg.get("user_name", "NURSE")
+        self._assistant_name = profile.upper()
 
         self._system      = cfg["system_prompt"]
         self._schema_name = cfg["schema"]["name"]
@@ -57,14 +63,23 @@ class EscalationGrader:
         self,
         *,
         nurse_line: str,
-        history: List[Turn] = [],
-        context: Optional[dict] = None,
+        history: list = [],
     ) -> Literal["escalatory", "deescalatory", "neutral"]:
+        """
+        Evaluate the nurse's latest line.
+
+        history: either List[Turn] (legacy) or List[dict] with OpenAI-style
+                 {"role": "user"|"assistant", "content": "..."} entries.
+        nurse_line: the nurse's current utterance (not yet in history).
+        """
         payload: dict = {"current_nurse_line": nurse_line}
         if self.conversation_context_aware:
-            payload["conversation_history"] = format_history(history, max_turns=self.max_turns)
-        if self.scene_aware:
-            payload["context"] = context or {}
+            payload["conversation_history"] = format_history(
+                history,
+                max_turns=self.max_turns,
+                user_name=self._user_name,
+                assistant_name=self._assistant_name,
+            )
 
         logger.debug("=== LLM INPUT (use_schema=%s) ===\n[SYSTEM]\n%s\n[USER]\n%s",
                      self.use_schema, self._system, json.dumps(payload, indent=2, ensure_ascii=False))

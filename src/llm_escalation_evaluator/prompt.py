@@ -1,6 +1,4 @@
 from __future__ import annotations
-from typing import List
-from .data_types import Turn
 
 
 SYSTEM_RUBRIC = """
@@ -99,11 +97,33 @@ Neutral
 # - sarcasm_detected: yes | no
 #   (Did the nurse use sarcasm, mockery, or ironic tone?)
 
-def format_history(turns: List[Turn], max_turns: int = 16) -> str:
-    # keep last N turns
+def format_history(
+    turns: list,
+    max_turns: int = 16,
+    user_name: str = "NURSE",
+    assistant_name: str = "PATIENT",
+) -> str:
+    """Format conversation history for the LLM prompt.
+
+    Accepts either:
+    - List[Turn]  (legacy dataclass format, role in {"nurse", "patient"})
+    - List[dict]  (OpenAI-style {"role": "user"|"assistant", "content": "..."})
+    """
     recent = turns[-max_turns:]
     lines = []
     for t in recent:
-        speaker = "PATIENT" if t.role == "patient" else "NURSE"
-        lines.append(f"{speaker}: {t.text}")
+        if isinstance(t, dict):
+            role = t.get("role", "")
+            text = t.get("content", "")
+            if role == "user":
+                speaker = user_name.upper()
+            elif role == "assistant":
+                speaker = assistant_name.upper()
+            else:
+                speaker = role.upper()
+        else:
+            # Legacy Turn dataclass
+            speaker = "PATIENT" if t.role == "patient" else "NURSE"
+            text = t.text
+        lines.append(f"{speaker}: {text}")
     return "\n".join(lines)

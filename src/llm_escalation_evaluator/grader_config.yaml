@@ -1,97 +1,183 @@
-model: gpt-4o-mini
-use_schema: true
-temperature: 0.0
-seed: null
-max_turns: 16
-log_level: WARNING   # DEBUG | INFO | WARNING | ERROR
-conversation_context_aware: true   # include prior conversation turns in the prompt
-scene_aware: true                  # include clinical context (setting, goal, etc.) in the prompt
+profiles:
 
-system_prompt: |
-  You are grading a nurse–patient conversation for training.
+  barry:
+    model: gpt-4o-mini
+    use_schema: true
+    temperature: 0.0
+    seed: null
+    max_turns: 128
+    log_level: WARNING
+    conversation_context_aware: true
+    user_name: Nurse
 
-  Your task is to determine how the PATIENT'S emotional state changed
-  IMMEDIATELY AFTER the nurse's last statement.
+    system_prompt: |
+      You are grading a nurse–patient conversation for de-escalation training.
 
-  Focus ONLY on the patient's emotional reaction from their perspective.
+      The patient is BARRY: a frustrated, middle-aged man who has been waiting a long
+      time and feels ignored by staff. He escalates quickly when dismissed, spoken to
+      condescendingly, or when his concerns are minimised. He responds better to
+      direct acknowledgment, calm explanations, and feeling heard.
 
-  Classify the change in emotional state as one of:
+      Your task is to determine how BARRY'S emotional state changed IMMEDIATELY AFTER
+      the nurse's last statement.
 
-  Escalation
-  → the patient becomes more emotionally distressed,
-     tense, agitated, angry, resistant, or upset
+      Classify the change in emotional state as one of:
 
-  De-Escalation
-  → the patient becomes calmer,
-     reassured, cooperative, or less emotionally activated
+      Escalation
+      → Barry becomes more distressed, agitated, angry, resistant, or confrontational
 
-  Neutral
-  → no meaningful emotional change
+      De-Escalation
+      → Barry becomes calmer, less tense, more cooperative, or more reassured
 
-  Important:
-  - Judge from the patient's perception, not nurse intention
-  - Emotional inertia applies: emotional change is gradual
-  - Ignore spelling mistakes or transcription errors
-  - Compare emotional state BEFORE vs AFTER the nurse speaks
-  - Choose the closest label even if change is small
+      Neutral
+      → no meaningful emotional change
 
-  Output EXACTLY one word:
+      Important:
+      - Judge from Barry's perception, not nurse intention
+      - Emotional inertia applies: change is gradual, not sudden
+      - Ignore spelling mistakes or transcription errors
+      - Compare emotional state BEFORE vs AFTER the nurse speaks
+      - Choose the closest label even if change is small
 
-  Escalation
-  De-Escalation
-  Neutral
+      Output EXACTLY one word:
 
-schema:
-  name: nurse_patient_escalation_grade
-  fields:
-    - name: turn_label
-      type: string
-      enum: [escalatory, deescalatory, neutral]
-      required: true
+      Escalation
+      De-Escalation
+      Neutral
 
-    - name: nurse_impact
-      type: number
-      minimum: -1.0
-      maximum: 1.0
-      required: false
+    schema:
+      name: barry_escalation_grade
+      fields:
+        - name: turn_label
+          type: string
+          enum: [escalatory, deescalatory, neutral]
+          required: true
 
-    - name: patient_escalation_level
-      type: number
-      minimum: -1.0
-      maximum: 1.0
-      required: false
+        - name: nurse_impact
+          type: number
+          minimum: -1.0
+          maximum: 1.0
+          required: false
 
-    - name: confidence
-      type: number
-      minimum: 0.0
-      maximum: 1.0
-      required: false
+        - name: patient_escalation_level
+          type: number
+          minimum: -1.0
+          maximum: 1.0
+          required: false
 
-    - name: context_alignment
-      type: string
-      enum: [yes, partial, no]
-      required: false
+        - name: confidence
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          required: false
 
-    - name: sarcasm_detected
-      type: string
-      enum: [yes, no]
-      required: false
+        - name: rationale
+          type: string
+          required: false
 
-    - name: rationale
-      type: string
-      required: false
+        - name: signals
+          type: array
+          items:
+            type: string
+          maxItems: 8
+          required: false
 
-    - name: signals
-      type: array
-      items:
-        type: string
-      maxItems: 8
-      required: false
+        - name: coaching
+          type: array
+          items:
+            type: string
+          maxItems: 2
+          required: false
 
-    - name: coaching
-      type: array
-      items:
-        type: string
-      minItems: 0
-      maxItems: 2
-      required: false
+
+  maddie:
+    model: gpt-4o-mini
+    use_schema: true
+    temperature: 0.0
+    seed: null
+    max_turns: 128
+    log_level: WARNING
+    conversation_context_aware: true
+    user_name: Teacher
+
+    system_prompt: |
+      You are grading a teacher–student interaction for de-escalation training.
+
+      The setting is a CLASSROOM. The student is MADDIE: an angry, defiant teenager
+      who pushes back hard when she feels disrespected, singled out, or publicly
+      embarrassed. She escalates quickly when spoken to in a dismissive or
+      authoritarian tone, when she feels called out in front of peers, or when she
+      believes she is being treated unfairly. She responds better when the teacher
+      stays calm, speaks to her privately, and acknowledges her feelings without
+      backing down on expectations.
+
+      Your task is to determine how MADDIE'S emotional state changed IMMEDIATELY AFTER
+      the teacher's last statement.
+
+      Classify the change in emotional state as one of:
+
+      Escalation
+      → Maddie becomes more defiant, aggressive, disruptive, or disengaged
+
+      De-Escalation
+      → Maddie becomes calmer, less combative, more willing to cooperate
+
+      Neutral
+      → no meaningful emotional change
+
+      Important:
+      - Judge from Maddie's perception, not teacher intention
+      - Emotional inertia applies: change is gradual, not sudden
+      - Ignore spelling mistakes or transcription errors
+      - Compare emotional state BEFORE vs AFTER the teacher speaks
+      - Choose the closest label even if change is small
+
+      Output EXACTLY one word:
+
+      Escalation
+      De-Escalation
+      Neutral
+
+    schema:
+      name: maddie_escalation_grade
+      fields:
+        - name: turn_label
+          type: string
+          enum: [escalatory, deescalatory, neutral]
+          required: true
+
+        - name: nurse_impact
+          type: number
+          minimum: -1.0
+          maximum: 1.0
+          required: false
+
+        - name: patient_escalation_level
+          type: number
+          minimum: -1.0
+          maximum: 1.0
+          required: false
+
+        - name: confidence
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          required: false
+
+        - name: rationale
+          type: string
+          required: false
+
+        - name: signals
+          type: array
+          items:
+            type: string
+          maxItems: 8
+          required: false
+
+        - name: coaching
+          type: array
+          items:
+            type: string
+          maxItems: 2
+          required: false
