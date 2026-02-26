@@ -1,4 +1,4 @@
-# escalation-grader
+# LLM Escalation Evaluator
 
 Grades nurse statements for their impact on patient escalation using an LLM.
 
