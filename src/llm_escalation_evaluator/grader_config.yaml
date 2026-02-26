@@ -1,7 +1,7 @@
 profiles:
 
   barry:
-    model: gpt-4o-mini
+    model: gpt-4.1-mini
     use_schema: true
     temperature: 0.0
     seed: null

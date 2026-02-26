@@ -33,10 +33,22 @@ str
 """
 
 import time
-from llm_escalation_evaluator import evaluate, _get_grader
+from llm_escalation_evaluator import configure, evaluate, _get_grader
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ── Configure profiles ────────────────────────────────────────────────────────
+# Swap in the test config to verify custom config loading (log_level: DEBUG
+# in that file makes the "evaluate() profile=... config=..." line visible).
+TEST_CONFIG = "tests/configs/test_config.yaml"
+
+configure("barry",  config_path=TEST_CONFIG)
+configure("maddie", config_path=TEST_CONFIG)
+
+# To use the default built-in config instead, replace the two lines above with:
+# configure("barry")
+# configure("maddie")
 
 # ── Test data: Barry (agitated patient) ───────────────────────────────────────
 

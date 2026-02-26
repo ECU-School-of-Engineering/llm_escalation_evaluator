@@ -32,6 +32,7 @@ class EscalationGrader:
         cfg = load_profile_config(profile=profile, path=config_path)
 
         self.profile     = profile
+        self.config_path = config_path
         self.model       = model       if model       is not None else cfg["model"]
         self.max_turns   = max_turns   if max_turns   is not None else cfg["max_turns"]
         self.temperature = temperature if temperature is not None else cfg["temperature"]
