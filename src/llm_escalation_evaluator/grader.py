@@ -47,9 +47,10 @@ class EscalationGrader:
         self._user_name      = cfg.get("user_name", "NURSE")
         self._assistant_name = profile.upper()
 
-        self._system      = cfg["system_prompt"]
-        self._schema_name = cfg["schema"]["name"]
-        self._schema_body = build_schema_body(cfg["schema"]["fields"])
+        self._system        = cfg["system_prompt"]
+        self._schema_name   = cfg["schema"]["name"]
+        self._schema_body   = build_schema_body(cfg["schema"]["fields"])
+        self._return_field  = cfg.get("return_field", "turn_label")
 
         self.client = client or OpenAIResponsesClient()
 
