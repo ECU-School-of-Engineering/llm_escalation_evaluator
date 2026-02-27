@@ -100,7 +100,8 @@ class EscalationGrader:
         logger.debug("=== LLM OUTPUT (use_schema=%s) ===\n%s", self.use_schema, raw)
 
         if self.use_schema:
-            data = json.loads(raw)
-            return data["turn_label"]
+            if self._return_field is None:
+                return raw  # return full JSON string; caller parses all fields
+            return json.loads(raw)[self._return_field]
         else:
             return raw.strip()

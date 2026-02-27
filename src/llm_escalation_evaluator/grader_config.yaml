@@ -91,9 +91,10 @@ profiles:
 
 
   barry_feedback:
-    model: gpt-4.1-mini
-    use_schema: false
-    temperature: 0.7
+    model: o4-mini
+    use_schema: true
+    return_field: null        # return full JSON; caller gets all schema fields add this when you want a custom schema. method will return the full json
+    temperature: null
     seed: null
     max_turns: 1000
     log_level: WARNING
@@ -111,31 +112,34 @@ profiles:
       You will be given the full conversation between the nurse and Barry under the key
       "conversation_history". Ignore the "current_nurse_line" field entirely.
 
-      Your task is to provide coaching feedback for the nurse based on the full
-      conversation. Structure your response as follows:
-
-      **What went well**
-      - (bullet points highlighting effective de-escalation moments)
-
-      **Areas for improvement**
-      - (bullet points with specific, actionable suggestions tied to moments in the conversation)
-
-      **Overall summary**
-      (2–3 sentences summarising the nurse's performance and the single most important takeaway)
-
+      Analyse the full conversation and return structured coaching feedback for the nurse.
       Be specific — reference what the nurse actually said where relevant.
       Be constructive and supportive in tone.
 
-    # Placeholder — not sent to the API when use_schema is false.
     schema:
-      name: barry_feedback_placeholder
-      fields: []
+      name: barry_feedback
+      fields:
+        - name: what_went_well
+          type: array
+          items:
+            type: string
+          required: true
+
+        - name: areas_for_improvement
+          type: array
+          items:
+            type: string
+          required: true
+
+        - name: overall_summary
+          type: string
+          required: true
 
 
   maddie_feedback:
-    model: gpt-4o-mini
+    model: o4-mini
     use_schema: false
-    temperature: 0.7
+    temperature: null
     seed: null
     max_turns: 1000
     log_level: WARNING
@@ -155,18 +159,7 @@ profiles:
       You will be given the full conversation between the teacher and Maddie under the
       key "conversation_history". Ignore the "current_nurse_line" field entirely.
 
-      Your task is to provide coaching feedback for the teacher based on the full
-      conversation. Structure your response as follows:
-
-      **What went well**
-      - (bullet points highlighting effective de-escalation moments)
-
-      **Areas for improvement**
-      - (bullet points with specific, actionable suggestions tied to moments in the conversation)
-
-      **Overall summary**
-      (2–3 sentences summarising the teacher's performance and the single most important takeaway)
-
+      Analyse the full conversation and provide coaching feedback for the teacher.
       Be specific — reference what the teacher actually said where relevant.
       Be constructive and supportive in tone.
 
