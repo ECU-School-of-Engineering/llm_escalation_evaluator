@@ -32,8 +32,7 @@ str
     One of: "escalatory" | "deescalatory" | "neutral"
 """
 
-import time
-from llm_escalation_evaluator import configure, evaluate, _get_grader
+from llm_escalation_evaluator import configure, evaluate
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -73,12 +72,8 @@ maddie_history = [
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 def run(label, profile, history, sentence):
-    grader_id = id(_get_grader(profile))
-    t0 = time.perf_counter()
     result = evaluate(profile, history, sentence)
-    elapsed = time.perf_counter() - t0
-    print(f"  [{label}]  profile={profile}  grader_id={grader_id}  result={result}  ({elapsed:.2f}s)")
-    print(f"    sentence: \"{sentence}\"")
+    print(f"[{label}] {result}")
 
 # ── Calls ─────────────────────────────────────────────────────────────────────
 
@@ -115,3 +110,21 @@ run("maddie-C-2", "maddie", maddie_history, "You're right, I should have said so
 
 print()
 print("Note: matching grader_id values confirm the same instance was reused.")
+
+# ── Feedback tests ─────────────────────────────────────────────────────────────
+
+def run_feedback(label, profile, history):
+    result = evaluate(profile, history, "")
+    print(f"[{label}] {result}")
+
+print()
+print("=== Feedback: end-of-session coaching ===")
+print()
+
+print("-- Barry session feedback --")
+run_feedback("barry-feedback", "barry_feedback", barry_history)
+
+print()
+
+print("-- Maddie session feedback --")
+run_feedback("maddie-feedback", "maddie_feedback", maddie_history)

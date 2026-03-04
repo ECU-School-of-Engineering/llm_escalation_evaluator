@@ -47,9 +47,10 @@ class EscalationGrader:
         self._user_name      = cfg.get("user_name", "NURSE")
         self._assistant_name = profile.upper()
 
-        self._system      = cfg["system_prompt"]
-        self._schema_name = cfg["schema"]["name"]
-        self._schema_body = build_schema_body(cfg["schema"]["fields"])
+        self._system        = cfg["system_prompt"]
+        self._schema_name   = cfg["schema"]["name"]
+        self._schema_body   = build_schema_body(cfg["schema"]["fields"])
+        self._return_field  = cfg.get("return_field", "turn_label")
 
         self.client = client or OpenAIResponsesClient()
 
@@ -99,7 +100,8 @@ class EscalationGrader:
         logger.debug("=== LLM OUTPUT (use_schema=%s) ===\n%s", self.use_schema, raw)
 
         if self.use_schema:
-            data = json.loads(raw)
-            return data["turn_label"]
+            if self._return_field is None:
+                return raw  # return full JSON string; caller parses all fields
+            return json.loads(raw)[self._return_field]
         else:
             return raw.strip()

@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 import os
+import json
 import time
 import textwrap
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from llm_escalation_evaluator.grader import EscalationGrader
-from llm_escalation_evaluator.session import TrainingSession
+from llm_escalation_evaluator.data_types import Turn
 
 
 # -----------------------------
@@ -117,9 +118,7 @@ class TrajectoryPlotter:
         s = df_session_nurse.copy()
         s = s.sort_values("turn_number")
 
-        # X axis = nurse sentence order
         x = np.arange(len(s))
-        # labels = [self._wrap_label(self._short_label(t)) for t in s["text"].astype(str).tolist()]
         labels = []
         for text, gt in zip(s["text"], s["ground_truth_label"]):
             base = self._short_label(text)
@@ -135,10 +134,8 @@ class TrajectoryPlotter:
                 "neutral": 0.0,
                 "deescalatory": -0.9,
             }
-
             gt_vals = s["ground_truth_label"].map(gt_map)
             plt.scatter(x, gt_vals, marker="D", label="Ground truth label")
-        # y_gt = pd.to_numeric(s.get("ground_truth_score", np.nan), errors="coerce")
 
         sarcasm = s.get("sarcasm_detected", "no")
         sarcasm = sarcasm.astype(str).str.lower().str.strip()
@@ -153,10 +150,7 @@ class TrajectoryPlotter:
 
         plt.plot(x, y_pred, marker="o", label="Predicted escalation (raw)")
         plt.plot(x, y_final, marker="o", label="Final escalation (for FIS)")
-        # if y_gt.notna().any():
-        #     plt.plot(x, y_gt, marker="o", label="Ground truth escalation")
 
-        # markers (on final line for visibility)
         if len(sarcasm_idx) > 0:
             plt.scatter(x[sarcasm_idx], y_final.iloc[sarcasm_idx], marker="s", label="Sarcasm detected")
         if len(bad_ctx_idx) > 0:
@@ -185,10 +179,9 @@ class EvalRunConfig:
     csv_path: str
     out_dir: str = "tests"
     session_filter: Optional[List[str]] = None
-    context: Optional[Dict] = None
 
-    model: str = "gpt-5-mini"
-    temperature: Optional[float] = None  # only for models that support it
+    profile: str = "barry"
+    config_path: Optional[str] = None  # path to custom YAML; uses built-in if None
 
     # plotting
     plots_subdir: str = "combined_trajectory_plots"
@@ -196,6 +189,22 @@ class EvalRunConfig:
     # evaluation filter: roles
     patient_role: str = "assistant"
     nurse_role: str = "user"
+
+
+def _parse_grade_result(raw: str) -> dict:
+    """
+    Parse the return value of evaluate_nurse_turn.
+    When return_field is set (default), raw is just the label string.
+    When return_field is null, raw is a full JSON string with all fields.
+    """
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, dict):
+            return parsed
+    except (json.JSONDecodeError, TypeError):
+        pass
+    # raw is a plain label string (e.g. "escalatory")
+    return {"turn_label": raw.strip()}
 
 
 class EvaluationRunner:
@@ -209,17 +218,12 @@ class EvaluationRunner:
         self.final_calc = final_calc or FinalEscalationCalculator()
         self.plotter = plotter or TrajectoryPlotter()
 
-        self.context = cfg.context or {"setting": "ED", "goal": "de-escalation training"}
-
-        # build grader
-        if cfg.temperature is None:
-            self.grader = EscalationGrader(model=cfg.model)
-        else:
-            self.grader = EscalationGrader(model=cfg.model, temperature=cfg.temperature)
-
+        self.grader = EscalationGrader(
+            profile=cfg.profile,
+            config_path=cfg.config_path,
+        )
         self.model_used = self.grader.model
 
-        # outputs
         os.makedirs(cfg.out_dir, exist_ok=True)
         self.output_csv = os.path.join(cfg.out_dir, f"evaluation_results_test_{cfg.test_number}.csv")
         self.plots_dir = os.path.join(cfg.out_dir, cfg.plots_subdir, f"test_{cfg.test_number}")
@@ -228,7 +232,6 @@ class EvaluationRunner:
     def run(self) -> pd.DataFrame:
         df = pd.read_csv(self.cfg.csv_path)
 
-        # filter sessions
         if self.cfg.session_filter:
             df = df[df["session_id"].isin(self.cfg.session_filter)]
 
@@ -236,15 +239,14 @@ class EvaluationRunner:
 
         for session_id, session_df in df.groupby("session_id"):
             session_df = session_df.sort_values("turn_number")
-
-            session = TrainingSession(grader=self.grader, context=self.context)
+            history: List[Turn] = []
 
             for _, row in session_df.iterrows():
                 role = str(row["role"]).strip().lower()
                 text = str(row["content"])
 
                 if role == self.cfg.patient_role.lower():  # patient
-                    session.add_patient(text)
+                    history.append(Turn(role="patient", text=text))
                     results.append({
                         "session_id": session_id,
                         "turn_number": row["turn_number"],
@@ -264,8 +266,15 @@ class EvaluationRunner:
 
                 elif role == self.cfg.nurse_role.lower():  # nurse
                     t0 = time.perf_counter()
-                    result = session.add_nurse_and_grade(text)
+                    raw = self.grader.evaluate_nurse_turn(
+                        nurse_line=text,
+                        history=history,
+                    )
                     inference_ms = (time.perf_counter() - t0) * 1000.0
+
+                    history.append(Turn(role="nurse", text=text))
+
+                    parsed = _parse_grade_result(raw)
 
                     results.append({
                         "session_id": session_id,
@@ -274,12 +283,13 @@ class EvaluationRunner:
                         "text": text,
                         "model": self.model_used,
                         "inference_ms": round(inference_ms, 2),
-                        "predicted_label": result.turn_label,
-                        "predicted_impact": result.nurse_impact,
-                        "predicted_escalation": result.patient_escalation_level,
-                        "confidence": result.confidence,
-                        "context_alignment": getattr(result, "context_alignment", None),
-                        "sarcasm_detected": getattr(result, "sarcasm_detected", None),
+                        "predicted_label": parsed.get("turn_label"),
+                        "justification": parsed.get("justification"),
+                        "predicted_impact": parsed.get("nurse_impact"),
+                        "predicted_escalation": parsed.get("patient_escalation_level"),
+                        "confidence": parsed.get("confidence"),
+                        "context_alignment": parsed.get("context_alignment"),
+                        "sarcasm_detected": parsed.get("sarcasm_detected"),
                         "ground_truth_edn": row.get("ground_truth_edn", None),
                         "ground_truth_label": row.get("ground_truth_label", None),
                     })
@@ -299,7 +309,6 @@ class EvaluationRunner:
         for session_id, s in out_df.groupby("session_id"):
             s = s.sort_values("turn_number")
 
-            # nurse turns only (prefer role==user, fallback predicted exists)
             s_nurse = s[s["role"].astype(str).str.lower().eq(self.cfg.nurse_role.lower())].copy()
             if s_nurse.empty or s_nurse["predicted_escalation"].isna().all():
                 s_nurse = s.dropna(subset=["predicted_escalation"]).copy()
@@ -328,7 +337,7 @@ class EvaluationRunner:
 class EvalSuite:
     """
     Run multiple tests over the same sessions.
-    Example: compare gpt-5-mini vs gpt-4.1-mini with temperature.
+    Example: compare barry vs maddie profiles.
     """
     def __init__(self, base_csv_path: str, out_dir: str = "tests"):
         self.base_csv_path = base_csv_path
@@ -348,31 +357,24 @@ class EvalSuite:
 # Example usage
 # -----------------------------
 if __name__ == "__main__":
-    # Same sessions, multiple tests/models:
+    suite = EvalSuite(base_csv_path="tests/clean_selected_sessions_semantic_clean.csv", out_dir="tests")
 
-    # df = pd.read_csv("tests/evaluation_results_test_10.csv")
-
-    # runner = EvaluationRunner(EvalRunConfig(test_number=10, csv_path=""))
-    # runner.make_plots(df)
-    suite = EvalSuite(base_csv_path="tests/conversations_Feb_01_with_ground_truth.csv", out_dir="tests")
-    
     runs = [
         EvalRunConfig(
-            test_number=12,
-            csv_path="tests/conversations_Feb_01_with_ground_truth.csv",
+            test_number=15,
+            csv_path="tests/clean_selected_sessions_semantic_clean.csv",
             out_dir="tests",
-            session_filter=["041a4ab4-0fbf-4623-b5b4-2948de4fdc8e"],
-            model="gpt-5-mini",
-            temperature=None,  # (ignored/unsupported for some models)
+            # session_filter=["041a4ab4-0fbf-4623-b5b4-2948de4fdc8e"],
+            profile="barry",
+            config_path="tests/configs/test_config.yaml",
         ),
-        # Uncomment if you want a GPT-4 family run too:
+        # Uncomment to run a different profile:
         # EvalRunConfig(
-        #     test_number=9,
-        #     csv_path="tests/conversations_Feb_01.csv",
+        #     test_number=13,
+        #     csv_path="tests/clean_5_sessions_with_previous.csv",
         #     out_dir="tests",
-        #     session_filter=["cb2053bb-72a6-4542-bdf6-07de82a0dcdb"],
-        #     model="gpt-4.1-mini",
-        #     temperature=0.0,
+        #     session_filter=["041a4ab4-0fbf-4623-b5b4-2948de4fdc8e"],
+        #     profile="maddie",
         # ),
     ]
 
